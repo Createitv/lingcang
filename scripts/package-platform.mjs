@@ -47,7 +47,16 @@ function run(command, args, options = {}) {
 }
 
 function runPnpm(args) {
-  run(process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm', args)
+  if (process.platform === 'win32') {
+    execFileSync('pnpm', args, {
+      cwd: root,
+      stdio: 'inherit',
+      shell: true
+    })
+    return
+  }
+
+  run('pnpm', args)
 }
 
 function removeIfExists(filePath) {
