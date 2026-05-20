@@ -445,7 +445,7 @@
             把小红书、公众号、知乎、抖音等账号放进独立会话里，登录状态互不干扰，切换账号像切换标签一样自然。
           </p>
           <div class="cta-row">
-            <a class="button" href="https://github.com/Createitv/lingcang/actions" data-i18n="download">下载构建</a>
+            <a class="button" href="https://github.com/Createitv/lingcang/releases/latest" data-i18n="download">下载构建</a>
             <a class="button secondary" href="https://github.com/Createitv/lingcang" data-i18n="source">查看源码</a>
           </div>
         </div>
@@ -570,10 +570,11 @@
       }
 
       const button = document.querySelector("#langToggle")
-      let current = navigator.language.toLowerCase().startsWith("zh") ? "zh" : "en"
+      let current = localStorage.getItem("lingcang-locale") || (navigator.language.toLowerCase().startsWith("zh") ? "zh" : "en")
 
       function render(locale) {
         current = locale
+        localStorage.setItem("lingcang-locale", locale)
         document.documentElement.lang = locale === "zh" ? "zh-CN" : "en"
         document.title = locale === "zh" ? "灵舱 LingCang" : "LingCang"
         for (const element of document.querySelectorAll("[data-i18n]")) {
