@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>灵舱</title>
+    <link rel="icon" href="../assets/app-logo.svg" />
+    <link rel="stylesheet" href="./tailwind.css" />
+  </head>
+  <body>
+    <aside id="sidebar" class="sidebar">
+      <div class="sidebar-header">
+        <div class="brand" title="灵舱">
+          <img class="brand-logo" src="../assets/app-logo.svg" alt="" />
+          <span class="brand-text" data-i18n="appName">灵舱</span>
+        </div>
+        <button id="collapseSidebar" class="icon-button compact" title="折叠侧栏" data-i18n-title="collapseSidebar">‹</button>
+      </div>
+      <button id="addAccount" class="add-button" type="button" title="新增账号" data-i18n-title="addAccount">
+        <span class="add-icon">+</span>
+        <span class="add-label" data-i18n="addAccount">新增账号</span>
+      </button>
+      <button id="addPlatform" class="add-button secondary" type="button" title="新增平台" data-i18n-title="addPlatform">
+        <span class="add-icon">＋</span>
+        <span class="add-label" data-i18n="addPlatform">新增平台</span>
+      </button>
+      <form id="platformForm" class="inline-form hidden">
+        <label>
+          <span data-i18n="platformName">平台名称</span>
+          <input id="platformName" autocomplete="off" required />
+        </label>
+        <label>
+          <span data-i18n="platformUrl">平台网址</span>
+          <input id="platformUrl" autocomplete="off" spellcheck="false" required />
+        </label>
+        <div id="platformFormError" class="form-error"></div>
+        <div class="inline-actions">
+          <button id="cancelPlatform" class="tool-button" type="button" data-i18n="cancel">取消</button>
+          <button class="primary-button" type="submit" data-i18n="create">创建</button>
+        </div>
+      </form>
+      <form id="accountForm" class="inline-form hidden">
+        <label>
+          <span data-i18n="platform">平台</span>
+          <select id="platformSelect"></select>
+        </label>
+        <label>
+          <span data-i18n="accountName">账号名称</span>
+          <input id="accountName" autocomplete="off" required />
+        </label>
+        <div id="formError" class="form-error"></div>
+        <div class="inline-actions">
+          <button id="cancelAccount" class="tool-button" type="button" data-i18n="cancel">取消</button>
+          <button class="primary-button" type="submit" data-i18n="create">创建</button>
+        </div>
+      </form>
+      <div id="platforms" class="platforms"></div>
+      <div id="sidebarResizeHandle" class="resize-handle" title="拖动调整宽度" data-i18n-title="resizeSidebar"></div>
+    </aside>
+
+    <header id="toolbar" class="toolbar">
+      <button id="expandSidebar" class="icon-button compact hidden" title="展开侧栏" data-i18n-title="expandSidebar">☰</button>
+      <button id="back" class="icon-button" title="后退" data-i18n-title="back">‹</button>
+      <button id="forward" class="icon-button" title="前进" data-i18n-title="forward">›</button>
+      <button id="reload" class="icon-button" title="刷新" data-i18n-title="reload">↻</button>
+      <form id="addressForm" class="address-form">
+        <input id="address" autocomplete="off" spellcheck="false" />
+      </form>
+      <button id="devtools" class="tool-button">DevTools</button>
+    </header>
+    <div id="tabbar" class="tabbar"></div>
+
+    <script src="./renderer.js"></script>
+  </body>
+</html>

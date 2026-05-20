@@ -1,0 +1,284 @@
+@import "tailwindcss";
+
+@source "./renderer.html";
+@source "./renderer.ts";
+
+@theme {
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+
+@layer base {
+  :root {
+    --sidebar-width: 220px;
+    --sidebar-collapsed-width: 56px;
+  }
+
+  * {
+    @apply box-border;
+  }
+
+  body {
+    @apply m-0 overflow-hidden bg-slate-100 font-sans text-slate-950 dark:bg-slate-950 dark:text-slate-100;
+  }
+}
+
+@layer components {
+  .sidebar {
+    @apply fixed inset-y-0 left-0 w-[var(--sidebar-width)] border-r border-slate-200 bg-white px-2.5 py-3 transition-[width] duration-150 ease-out dark:border-slate-800 dark:bg-slate-900;
+  }
+
+  .sidebar-header {
+    @apply flex h-[34px] items-center justify-between gap-2;
+  }
+
+  .brand {
+    @apply flex min-w-0 items-center gap-2 text-[13px] font-semibold leading-7 text-slate-700 dark:text-slate-200;
+  }
+
+  .brand-logo {
+    @apply size-7 shrink-0 rounded-lg;
+  }
+
+  .brand-text {
+    @apply min-w-0 overflow-hidden text-ellipsis whitespace-nowrap;
+  }
+
+  .platforms {
+    @apply mt-2.5 grid gap-2.5;
+  }
+
+  .platform-section {
+    @apply grid gap-1;
+  }
+
+  .platform-header,
+  .account-button,
+  .add-button {
+    @apply w-full rounded-lg border border-transparent bg-transparent text-slate-800 dark:text-slate-100;
+  }
+
+  .platform-header,
+  .account-button {
+    @apply flex items-center gap-2 px-2 text-left hover:bg-slate-100 dark:hover:bg-slate-800;
+  }
+
+  .platform-header {
+    @apply h-9;
+  }
+
+  .platform-name,
+  .account-name {
+    @apply min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap;
+  }
+
+  .platform-count {
+    @apply text-xs text-slate-400 dark:text-slate-500;
+  }
+
+  .account-list {
+    @apply grid gap-1 pl-2;
+  }
+
+  .account-button {
+    @apply min-h-[42px] text-sm;
+  }
+
+  .account-button.active {
+    @apply border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-300;
+  }
+
+  .avatar {
+    @apply grid size-6 shrink-0 place-items-center rounded-md bg-slate-200 text-[13px] font-semibold text-slate-600 dark:bg-slate-700 dark:text-slate-200;
+  }
+
+  .avatar.small {
+    @apply size-[22px] rounded-md text-xs;
+  }
+
+  .platform-icon.xhs {
+    @apply bg-[#ff2442] text-white;
+  }
+
+  .platform-icon.wechat {
+    @apply bg-[#1aad19] text-white;
+  }
+
+  .platform-icon.zhihu {
+    @apply bg-[#1772f6] text-white;
+  }
+
+  .platform-logo {
+    @apply size-full rounded-md object-cover;
+  }
+
+  .account-text {
+    @apply grid min-w-0 flex-1 gap-0.5;
+  }
+
+  .account-status {
+    @apply min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-[11px] leading-[13px] text-slate-400 dark:text-slate-500;
+  }
+
+  .rename-input {
+    @apply h-7 min-w-0 flex-1 rounded-md border border-blue-300 bg-white px-2 font-sans text-sm text-slate-950 outline-none dark:border-blue-700 dark:bg-slate-950 dark:text-slate-100;
+  }
+
+  .account-button.editing {
+    @apply bg-white dark:bg-slate-900;
+  }
+
+  .add-button {
+    @apply mt-2.5 flex h-[34px] items-center justify-center gap-1.5 border-slate-300 bg-white text-[13px] hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800;
+  }
+
+  .add-button.secondary {
+    @apply mt-1.5;
+  }
+
+  .add-icon {
+    @apply text-lg leading-none;
+  }
+
+  .toolbar {
+    @apply fixed inset-x-0 top-0 left-[var(--sidebar-width)] flex h-[52px] items-center gap-2 border-b border-slate-200 bg-white px-2.5 py-2 transition-[left] duration-150 ease-out dark:border-slate-800 dark:bg-slate-900;
+  }
+
+  .toolbar.collapsed {
+    @apply left-[var(--sidebar-collapsed-width)];
+  }
+
+  .tabbar {
+    @apply fixed inset-x-0 top-[52px] left-[var(--sidebar-width)] flex h-9 items-center gap-1 overflow-x-auto border-b border-slate-200 bg-slate-50 px-2 transition-[left] duration-150 ease-out dark:border-slate-800 dark:bg-slate-950;
+  }
+
+  .toolbar.collapsed + .tabbar {
+    @apply left-[var(--sidebar-collapsed-width)];
+  }
+
+  .tab-button {
+    @apply flex h-7 max-w-56 shrink-0 items-center gap-1.5 rounded-md border border-transparent px-2 text-left text-xs text-slate-500 hover:bg-white hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-900 dark:hover:text-slate-100;
+  }
+
+  .tab-button.active {
+    @apply border-blue-200 bg-white text-blue-700 shadow-sm dark:border-blue-900 dark:bg-slate-900 dark:text-blue-300;
+  }
+
+  .tab-title {
+    @apply min-w-0 overflow-hidden text-ellipsis whitespace-nowrap;
+  }
+
+  .tab-close {
+    @apply grid size-4 shrink-0 place-items-center rounded text-sm leading-none text-slate-400 hover:bg-slate-100 hover:text-slate-800 dark:hover:bg-slate-800 dark:hover:text-slate-100;
+  }
+
+  .icon-button,
+  .tool-button,
+  .primary-button {
+    @apply h-[34px] rounded-lg border border-slate-300 bg-white text-slate-800 hover:bg-slate-100 disabled:bg-slate-50 disabled:text-slate-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800 dark:disabled:bg-slate-900 dark:disabled:text-slate-600;
+  }
+
+  .icon-button {
+    @apply w-[34px] text-2xl leading-6;
+  }
+
+  .icon-button.compact {
+    @apply size-[30px] text-lg;
+  }
+
+  .tool-button,
+  .primary-button {
+    @apply px-3 text-[13px];
+  }
+
+  .primary-button {
+    @apply border-blue-700 bg-blue-600 text-white hover:bg-blue-700 dark:border-blue-500 dark:bg-blue-600 dark:hover:bg-blue-500;
+  }
+
+  .address-form {
+    @apply flex-1;
+  }
+
+  #address,
+  #accountName,
+  #platformName,
+  #platformUrl,
+  #platformSelect {
+    @apply h-[34px] w-full rounded-lg border border-slate-300 bg-slate-50 px-3 text-sm text-slate-950 outline-none focus:border-blue-300 focus:bg-white dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:border-blue-700 dark:focus:bg-slate-900;
+  }
+
+  .inline-form {
+    @apply mt-2.5 grid gap-2.5 rounded-lg border border-slate-200 bg-slate-50 p-2.5 dark:border-slate-800 dark:bg-slate-950;
+  }
+
+  .inline-form label {
+    @apply grid gap-1.5 text-[13px] text-slate-600 dark:text-slate-300;
+  }
+
+  .inline-actions {
+    @apply flex justify-end gap-2;
+  }
+
+  .form-error {
+    @apply min-h-[18px] text-xs text-red-600 dark:text-red-400;
+  }
+
+  .context-menu {
+    @apply fixed z-50 grid min-w-36 gap-1 rounded-lg border border-slate-200 bg-white p-1 shadow-lg shadow-slate-900/10 dark:border-slate-700 dark:bg-slate-900 dark:shadow-black/30;
+  }
+
+  .context-menu-item {
+    @apply h-8 rounded-md px-2.5 text-left text-[13px] text-slate-700 hover:bg-slate-100 dark:text-slate-100 dark:hover:bg-slate-800;
+  }
+
+  .context-menu-item.danger {
+    @apply text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950;
+  }
+
+  .resize-handle {
+    @apply absolute inset-y-0 right-0 z-10 w-2 cursor-col-resize hover:bg-blue-300 dark:hover:bg-blue-700;
+  }
+
+  body.resizing-sidebar {
+    @apply cursor-col-resize select-none;
+  }
+
+  body.resizing-sidebar .resize-handle {
+    @apply bg-blue-300 dark:bg-blue-700;
+  }
+
+  body.sidebar-collapsed .sidebar {
+    @apply w-[var(--sidebar-collapsed-width)] px-2;
+  }
+
+  body.sidebar-collapsed .brand,
+  body.sidebar-collapsed .brand-text,
+  body.sidebar-collapsed .add-label,
+  body.sidebar-collapsed .platform-name,
+  body.sidebar-collapsed .platform-count,
+  body.sidebar-collapsed .account-text,
+  body.sidebar-collapsed .account-name {
+    @apply hidden;
+  }
+
+  body.sidebar-collapsed .sidebar-header {
+    @apply justify-center;
+  }
+
+  body.sidebar-collapsed .platforms {
+    @apply gap-2;
+  }
+
+  body.sidebar-collapsed .platform-header,
+  body.sidebar-collapsed .account-button,
+  body.sidebar-collapsed .add-button {
+    @apply justify-center px-0;
+  }
+
+  body.sidebar-collapsed .account-list {
+    @apply pl-0;
+  }
+
+  body.sidebar-collapsed .inline-form {
+    @apply hidden;
+  }
+}

@@ -1,0 +1,10 @@
+node_modules/
+dist/
+release/
+.package/
+public/
+.DS_Store
+electron.log
+*.log
+image.png
+src/image.png

@@ -1,0 +1,28 @@
+{
+  "name": "lingcang",
+  "version": "0.1.0",
+  "private": true,
+  "productName": "LingCang",
+  "description": "LingCang is a multi-account workspace browser for isolated creator sessions.",
+  "packageManager": "pnpm@10.14.0",
+  "main": "dist/main.js",
+  "scripts": {
+    "build:ts": "tsc",
+    "build:css": "tailwindcss -i ./src/input.css -o ./dist/tailwind.css && cp ./src/renderer.html ./dist/renderer.html",
+    "prepare:package": "node scripts/prepare-package.mjs",
+    "prune:mac": "node scripts/prune-mac-package.mjs",
+    "package:mac": "pnpm run build:ts && pnpm run build:css && pnpm run prepare:package && electron-packager .package LingCang --platform=darwin --arch=x64 --out=release --overwrite --asar --prune=true --app-bundle-id=com.lingcang.browser --app-version=$npm_package_version --executable-name=LingCang && pnpm run prune:mac && ditto -c -k --sequesterRsrc --keepParent release/LingCang-darwin-x64/LingCang.app release/LingCang-darwin-x64.zip && rm -rf .package",
+    "landing:build": "mkdir -p public && cp assets/app-logo.svg public/app-logo.svg && cp landing/index.html public/index.html",
+    "start": "pnpm run build:ts && pnpm run build:css && electron .",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@electron/asar": "^4.2.0",
+    "@electron/packager": "^18.4.4",
+    "@tailwindcss/cli": "^4.3.0",
+    "@types/node": "^25.7.0",
+    "electron": "^31.7.7",
+    "tailwindcss": "^4.3.0",
+    "typescript": "^6.0.3"
+  }
+}
