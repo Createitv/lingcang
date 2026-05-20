@@ -36,7 +36,7 @@ fs.writeFileSync(stagedRendererHtmlPath, inlinedRendererHtml)
 fs.rmSync(stagedRendererCssPath, { force: true })
 fs.rmSync(stagedRendererJsPath, { force: true })
 
-for (const asset of ['app-icon.png', 'app-logo.svg']) {
+for (const asset of ['app-icon.png', 'app-icon.ico', 'app-logo.svg']) {
   copyRecursive(path.join(root, 'assets', asset), path.join(stagingDir, 'assets', asset))
 }
 

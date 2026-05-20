@@ -11,7 +11,9 @@
     "build:css": "tailwindcss -i ./src/input.css -o ./dist/tailwind.css && cp ./src/renderer.html ./dist/renderer.html",
     "prepare:package": "node scripts/prepare-package.mjs",
     "prune:mac": "node scripts/prune-mac-package.mjs",
-    "package:mac": "pnpm run build:ts && pnpm run build:css && pnpm run prepare:package && electron-packager .package LingCang --platform=darwin --arch=x64 --out=release --overwrite --asar --prune=true --app-bundle-id=com.lingcang.browser --app-version=$npm_package_version --executable-name=LingCang && pnpm run prune:mac && ditto -c -k --sequesterRsrc --keepParent release/LingCang-darwin-x64/LingCang.app release/LingCang-darwin-x64.zip && rm -rf .package",
+    "package:mac": "pnpm run build:ts && pnpm run build:css && pnpm run prepare:package && node scripts/package-platform.mjs mac && node -e \"require('fs').rmSync('.package',{recursive:true,force:true})\"",
+    "package:win": "pnpm run build:ts && pnpm run build:css && pnpm run prepare:package && node scripts/package-platform.mjs win && node -e \"require('fs').rmSync('.package',{recursive:true,force:true})\"",
+    "package:linux": "pnpm run build:ts && pnpm run build:css && pnpm run prepare:package && node scripts/package-platform.mjs linux && node -e \"require('fs').rmSync('.package',{recursive:true,force:true})\"",
     "landing:build": "mkdir -p public && cp assets/app-logo.svg public/app-logo.svg && cp landing/index.html public/index.html",
     "start": "pnpm run build:ts && pnpm run build:css && electron .",
     "typecheck": "tsc --noEmit"
