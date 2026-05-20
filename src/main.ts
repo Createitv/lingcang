@@ -1,4 +1,4 @@
-import { app, BrowserWindow, WebContentsView, ipcMain, session } from 'electron'
+import { app, BrowserWindow, WebContentsView, clipboard, dialog, ipcMain, Menu, nativeImage, session } from 'electron'
 import type { IpcMainInvokeEvent, Session, WebContents } from 'electron'
 import fs from 'node:fs'
 import path from 'node:path'
@@ -18,6 +18,7 @@ app.setName(APP_DISPLAY_NAME)
 const defaultConfig: AppConfig = {
   sidebarCollapsed: false,
   sidebarWidth: DEFAULT_SIDEBAR_WIDTH,
+  extensionPaths: [],
   platforms: [
     {
       id: 'xhs',
@@ -143,6 +144,8 @@ const tabs = new Map<string, BrowserTab>()
 const accountTabIds = new Map<string, string[]>()
 const activeTabIdByAccount = new Map<string, string>()
 const tabIdByWebContentsId = new Map<number, string>()
+const loadedExtensionPathsByPartition = new Map<string, Set<string>>()
+const contextMenuWebContentsIds = new Set<number>()
 let activeAccountId: string | null = null
 let openingWindow = false
 
@@ -194,6 +197,12 @@ function mergePlatforms(parsedPlatforms: PlatformConfig[]): PlatformConfig[] {
   return [...merged.values()]
 }
 
+function normalizeExtensionPaths(paths: unknown): string[] {
+  if (!Array.isArray(paths)) return []
+
+  return [...new Set(paths.map((item) => String(item || '').trim()).filter(Boolean))]
+}
+
 function ensureConfig(): void {
   configPath = path.join(app.getPath('userData'), 'browser-data.json')
 
@@ -214,7 +223,8 @@ function ensureConfig(): void {
       ...parsed,
       sidebarWidth: clampSidebarWidth(parsed.sidebarWidth),
       platforms: mergePlatforms(parsedPlatforms),
-      accounts: Array.isArray(parsed.accounts) ? parsed.accounts : clone(defaultConfig.accounts)
+      accounts: Array.isArray(parsed.accounts) ? parsed.accounts : clone(defaultConfig.accounts),
+      extensionPaths: normalizeExtensionPaths(parsed.extensionPaths)
     }
     config.accounts = config.accounts.map((account) => normalizeAccount(account))
     saveConfig()
@@ -376,7 +386,80 @@ function configureAccountSession(account: AccountConfig): Session {
     })
   }
 
+  void loadConfiguredExtensions(accountSession, account.partition)
+
   return accountSession
+}
+
+function getExtensionName(extensionPath: string): string {
+  try {
+    const manifestPath = path.join(extensionPath, 'manifest.json')
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8')) as { name?: string }
+    return manifest.name || path.basename(extensionPath)
+  } catch {
+    return path.basename(extensionPath)
+  }
+}
+
+function validateExtensionPath(extensionPath: string): void {
+  if (!extensionPath || !fs.existsSync(extensionPath) || !fs.statSync(extensionPath).isDirectory()) {
+    throw new Error('请选择一个扩展文件夹')
+  }
+
+  if (!fs.existsSync(path.join(extensionPath, 'manifest.json'))) {
+    throw new Error('这个文件夹里没有 manifest.json')
+  }
+}
+
+async function loadExtension(accountSession: Session, partition: string, extensionPath: string): Promise<ExtensionLoadResult> {
+  const loadedPaths = loadedExtensionPathsByPartition.get(partition) || new Set<string>()
+  const name = getExtensionName(extensionPath)
+
+  if (loadedPaths.has(extensionPath)) return { path: extensionPath, name, loaded: true }
+
+  try {
+    validateExtensionPath(extensionPath)
+    const sessionWithExtensions = accountSession as Session & {
+      extensions?: { loadExtension: (extensionPath: string) => Promise<unknown> }
+      loadExtension?: (extensionPath: string) => Promise<unknown>
+    }
+    const loader = sessionWithExtensions.extensions?.loadExtension?.bind(sessionWithExtensions.extensions) ||
+      sessionWithExtensions.loadExtension?.bind(sessionWithExtensions)
+
+    if (!loader) throw new Error('当前 Electron 版本不支持加载扩展')
+
+    await loader(extensionPath)
+    loadedPaths.add(extensionPath)
+    loadedExtensionPathsByPartition.set(partition, loadedPaths)
+    return { path: extensionPath, name, loaded: true }
+  } catch (error) {
+    return {
+      path: extensionPath,
+      name,
+      loaded: false,
+      error: error instanceof Error ? error.message : '扩展加载失败'
+    }
+  }
+}
+
+async function loadConfiguredExtensions(accountSession: Session, partition: string): Promise<void> {
+  for (const extensionPath of config.extensionPaths) {
+    await loadExtension(accountSession, partition, extensionPath)
+  }
+}
+
+async function loadExtensionForAllAccounts(extensionPath: string): Promise<ExtensionLoadResult> {
+  let lastResult: ExtensionLoadResult = {
+    path: extensionPath,
+    name: getExtensionName(extensionPath),
+    loaded: false
+  }
+
+  for (const account of config.accounts) {
+    lastResult = await loadExtension(session.fromPartition(account.partition), account.partition, extensionPath)
+  }
+
+  return lastResult
 }
 
 function detectAccountIdentity(account: AccountConfig, view: WebContentsView): void {
@@ -442,6 +525,126 @@ function installPopupTabHandler(webContents: WebContents): void {
   })
 }
 
+function getImageFileName(imageUrl: string, contentType = ''): string {
+  try {
+    const parsed = new URL(imageUrl)
+    const baseName = path.basename(parsed.pathname).replace(/[^\w.-]/g, '') || 'image'
+    if (path.extname(baseName)) return baseName
+  } catch {
+    // Data/blob URLs do not provide a useful filename.
+  }
+
+  const extension = contentType.includes('png')
+    ? 'png'
+    : contentType.includes('gif')
+      ? 'gif'
+      : contentType.includes('webp')
+        ? 'webp'
+        : contentType.includes('svg')
+          ? 'svg'
+          : 'jpg'
+  return `image.${extension}`
+}
+
+async function readImageBuffer(webContents: WebContents, imageUrl: string): Promise<{ buffer: Buffer; contentType: string }> {
+  if (imageUrl.startsWith('data:')) {
+    const image = nativeImage.createFromDataURL(imageUrl)
+    return { buffer: image.toPNG(), contentType: 'image/png' }
+  }
+
+  const fetcher = (webContents.session as Session & { fetch?: typeof fetch }).fetch || fetch
+  const response = await fetcher(imageUrl)
+  if (!response.ok) throw new Error(`图片读取失败：${response.status}`)
+  return {
+    buffer: Buffer.from(await response.arrayBuffer()),
+    contentType: response.headers.get('content-type') || ''
+  }
+}
+
+async function saveImageAs(webContents: WebContents, imageUrl: string): Promise<void> {
+  const { buffer, contentType } = await readImageBuffer(webContents, imageUrl)
+  const options = {
+    defaultPath: path.join(app.getPath('downloads'), getImageFileName(imageUrl, contentType))
+  }
+  const result = win ? await dialog.showSaveDialog(win, options) : await dialog.showSaveDialog(options)
+
+  if (result.canceled || !result.filePath) return
+  fs.writeFileSync(result.filePath, buffer)
+}
+
+async function copyImage(webContents: WebContents, imageUrl: string): Promise<void> {
+  const { buffer } = await readImageBuffer(webContents, imageUrl)
+  const image = nativeImage.createFromBuffer(buffer)
+  if (image.isEmpty()) throw new Error('图片复制失败')
+  clipboard.writeImage(image)
+}
+
+function installBrowserContextMenu(webContents: WebContents): void {
+  if (contextMenuWebContentsIds.has(webContents.id)) return
+  contextMenuWebContentsIds.add(webContents.id)
+
+  webContents.once('destroyed', () => {
+    contextMenuWebContentsIds.delete(webContents.id)
+  })
+
+  webContents.on('context-menu', (_event, params) => {
+    const items: Electron.MenuItemConstructorOptions[] = []
+
+    if (params.mediaType === 'image' && params.srcURL) {
+      items.push(
+        {
+          label: '图片另存为...',
+          click: () => {
+            void saveImageAs(webContents, params.srcURL)
+          }
+        },
+        {
+          label: '下载图片',
+          click: () => webContents.downloadURL(params.srcURL)
+        },
+        {
+          label: '复制图片',
+          click: () => {
+            void copyImage(webContents, params.srcURL)
+          }
+        },
+        { label: '复制图片地址', click: () => clipboard.writeText(params.srcURL) }
+      )
+    }
+
+    if (params.linkURL) {
+      if (items.length > 0) items.push({ type: 'separator' })
+      items.push(
+        { label: '在新标签页打开链接', click: () => openPopupAsTab(webContents, params.linkURL) },
+        { label: '复制链接地址', click: () => clipboard.writeText(params.linkURL) }
+      )
+    }
+
+    if (params.isEditable) {
+      if (items.length > 0) items.push({ type: 'separator' })
+      items.push(
+        { label: '剪切', role: 'cut' },
+        { label: '复制', role: 'copy' },
+        { label: '粘贴', role: 'paste' },
+        { label: '全选', role: 'selectAll' }
+      )
+    } else if (params.selectionText) {
+      if (items.length > 0) items.push({ type: 'separator' })
+      items.push({ label: '复制', role: 'copy' })
+    }
+
+    if (items.length === 0) {
+      items.push(
+        { label: '后退', enabled: webContents.canGoBack(), click: () => webContents.goBack() },
+        { label: '前进', enabled: webContents.canGoForward(), click: () => webContents.goForward() },
+        { label: '刷新', role: 'reload' }
+      )
+    }
+
+    Menu.buildFromTemplate(items).popup({ window: win || undefined })
+  })
+}
+
 function createAccountTab(account: AccountConfig, url = getAccountStartUrl(account), activate = false): BrowserTab {
   const accountSession = configureAccountSession(account)
   const tabId = `tab-${Date.now()}-${Math.random().toString(16).slice(2)}`
@@ -466,6 +669,7 @@ function createAccountTab(account: AccountConfig, url = getAccountStartUrl(accou
   views.set(tabId, view)
   tabIdByWebContentsId.set(view.webContents.id, tabId)
   installPopupTabHandler(view.webContents)
+  installBrowserContextMenu(view.webContents)
   keepViewMounted(view, false)
 
   view.webContents.on('did-navigate', (_event, url) => {
@@ -617,6 +821,7 @@ function closeTab(tabId: string): void {
   views.delete(tabId)
   tabs.delete(tabId)
   if (view) tabIdByWebContentsId.delete(view.webContents.id)
+  if (view) contextMenuWebContentsIds.delete(view.webContents.id)
   accountTabIds.set(
     tab.accountId,
     (accountTabIds.get(tab.accountId) || []).filter((id) => id !== tabId)
@@ -633,6 +838,12 @@ function closeTab(tabId: string): void {
   } else {
     sendTabsState()
   }
+}
+
+function createActiveAccountTab(): BrowserTab | undefined {
+  const account = activeAccountId ? findAccount(activeAccountId) : config.accounts[0]
+  if (!account) return undefined
+  return createAccountTab(account, findPlatform(account.platformId)?.homeUrl || getAccountStartUrl(account), true)
 }
 
 function slugify(value: string): string {
@@ -813,6 +1024,8 @@ ipcMain.handle('switch-account', (_event: IpcMainInvokeEvent, accountId: string)
   switchAccount(accountId)
 })
 
+ipcMain.handle('new-tab', () => createActiveAccountTab())
+
 ipcMain.handle('switch-tab', (_event: IpcMainInvokeEvent, tabId: string) => {
   switchTab(tabId)
 })
@@ -850,14 +1063,38 @@ ipcMain.handle('reload', () => {
   if (activeTabId) views.get(activeTabId)?.webContents.reload()
 })
 
-ipcMain.handle('open-devtools', () => {
-  const activeTabId = getActiveTabId()
-  if (activeTabId) views.get(activeTabId)?.webContents.openDevTools({ mode: 'detach' })
+ipcMain.handle('load-extension', async () => {
+  const options: Electron.OpenDialogOptions = {
+    title: '选择 Chrome 扩展文件夹',
+    properties: ['openDirectory']
+  }
+  const result = win ? await dialog.showOpenDialog(win, options) : await dialog.showOpenDialog(options)
+
+  if (result.canceled || !result.filePaths[0]) return undefined
+
+  const extensionPath = result.filePaths[0]
+  try {
+    validateExtensionPath(extensionPath)
+    if (!config.extensionPaths.includes(extensionPath)) {
+      config.extensionPaths.push(extensionPath)
+      saveConfig()
+    }
+
+    return loadExtensionForAllAccounts(extensionPath)
+  } catch (error) {
+    return {
+      path: extensionPath,
+      name: getExtensionName(extensionPath),
+      loaded: false,
+      error: error instanceof Error ? error.message : '扩展加载失败'
+    }
+  }
 })
 
 app.on('web-contents-created', (_event, webContents) => {
   if (webContents === win?.webContents) return
   installPopupTabHandler(webContents)
+  installBrowserContextMenu(webContents)
 })
 
 openWindowWhenReady()

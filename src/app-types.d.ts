@@ -45,6 +45,14 @@ interface AppConfig {
   sidebarWidth: number
   platforms: PlatformConfig[]
   accounts: AccountConfig[]
+  extensionPaths: string[]
+}
+
+interface ExtensionLoadResult {
+  path: string
+  name: string
+  loaded: boolean
+  error?: string
 }
 
 interface PublicAppData {
@@ -114,13 +122,14 @@ interface BrowserApi {
   setSidebarCollapsed: (collapsed: boolean) => Promise<void>
   setSidebarWidth: (width: number) => Promise<{ width: number }>
   switchAccount: (accountId: string) => Promise<void>
+  newTab: () => Promise<BrowserTab | undefined>
   switchTab: (tabId: string) => Promise<void>
   closeTab: (tabId: string) => Promise<void>
   navigate: (url: string) => Promise<void>
   goBack: () => Promise<void>
   goForward: () => Promise<void>
   reload: () => Promise<void>
-  openDevtools: () => Promise<void>
+  loadExtension: () => Promise<ExtensionLoadResult | undefined>
   onData: (callback: (data: PublicAppData) => void) => void
   onActiveAccount: (callback: (data: ActiveAccountEvent) => void) => void
   onNavState: (callback: (data: NavState) => void) => void

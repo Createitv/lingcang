@@ -9,13 +9,14 @@ const browserApi: BrowserApi = {
   setSidebarCollapsed: (collapsed: boolean) => ipcRenderer.invoke('set-sidebar-collapsed', collapsed),
   setSidebarWidth: (width: number) => ipcRenderer.invoke('set-sidebar-width', width),
   switchAccount: (accountId: string) => ipcRenderer.invoke('switch-account', accountId),
+  newTab: () => ipcRenderer.invoke('new-tab'),
   switchTab: (tabId: string) => ipcRenderer.invoke('switch-tab', tabId),
   closeTab: (tabId: string) => ipcRenderer.invoke('close-tab', tabId),
   navigate: (url: string) => ipcRenderer.invoke('navigate', url),
   goBack: () => ipcRenderer.invoke('go-back'),
   goForward: () => ipcRenderer.invoke('go-forward'),
   reload: () => ipcRenderer.invoke('reload'),
-  openDevtools: () => ipcRenderer.invoke('open-devtools'),
+  loadExtension: () => ipcRenderer.invoke('load-extension'),
   onData: (callback: (data: PublicAppData) => void) => {
     ipcRenderer.on('app-data', (_event, data: PublicAppData) => callback(data))
   },

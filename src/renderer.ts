@@ -28,7 +28,10 @@ const messages: Record<Locale, Record<string, string>> = {
     resizeSidebar: '拖动调整宽度',
     back: '后退',
     forward: '前进',
-    reload: '刷新'
+    reload: '刷新',
+    newTab: '新建标签页',
+    loadExtension: '扩展',
+    extensionLoaded: '扩展已加载'
   },
   en: {
     appName: 'LingCang',
@@ -50,7 +53,10 @@ const messages: Record<Locale, Record<string, string>> = {
     resizeSidebar: 'Drag to resize',
     back: 'Back',
     forward: 'Forward',
-    reload: 'Reload'
+    reload: 'Reload',
+    newTab: 'New tab',
+    loadExtension: 'Extensions',
+    extensionLoaded: 'Extension loaded'
   }
 }
 
@@ -79,7 +85,8 @@ const addressInput = getElement<HTMLInputElement>('#address')
 const backButton = getElement<HTMLButtonElement>('#back')
 const forwardButton = getElement<HTMLButtonElement>('#forward')
 const reloadButton = getElement<HTMLButtonElement>('#reload')
-const devtoolsButton = getElement<HTMLButtonElement>('#devtools')
+const newTabButton = getElement<HTMLButtonElement>('#newTab')
+const loadExtensionButton = getElement<HTMLButtonElement>('#loadExtension')
 const addAccountButton = getElement<HTMLButtonElement>('#addAccount')
 const addPlatformButton = getElement<HTMLButtonElement>('#addPlatform')
 const collapseSidebarButton = getElement<HTMLButtonElement>('#collapseSidebar')
@@ -548,7 +555,16 @@ expandSidebarButton.addEventListener('click', () => window.browserApi.setSidebar
 backButton.addEventListener('click', () => window.browserApi.goBack())
 forwardButton.addEventListener('click', () => window.browserApi.goForward())
 reloadButton.addEventListener('click', () => window.browserApi.reload())
-devtoolsButton.addEventListener('click', () => window.browserApi.openDevtools())
+newTabButton.addEventListener('click', () => window.browserApi.newTab())
+loadExtensionButton.addEventListener('click', async () => {
+  const result = await window.browserApi.loadExtension()
+  if (!result) return
+  loadExtensionButton.textContent = result.loaded ? t('extensionLoaded') : t('loadExtension')
+  loadExtensionButton.title = result.error || result.name
+  window.setTimeout(() => {
+    loadExtensionButton.textContent = t('loadExtension')
+  }, 1800)
+})
 
 sidebarResizeHandle.addEventListener('pointerdown', (event: PointerEvent) => {
   event.preventDefault()
