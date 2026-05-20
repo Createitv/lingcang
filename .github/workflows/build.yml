@@ -80,6 +80,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: release-assets
+          pattern: LingCang-*
           merge-multiple: true
 
       - name: Publish GitHub Release
@@ -97,10 +98,10 @@ jobs:
           - LingCang-Linux-x64.tar.gz"
 
           if gh release view "${TAG}" >/dev/null 2>&1; then
-            gh release upload "${TAG}" release-assets/* --clobber
+            gh release upload "${TAG}" release-assets/LingCang-* --clobber
             gh release edit "${TAG}" --title "${TITLE}" --notes "${NOTES}"
           else
-            gh release create "${TAG}" release-assets/* \
+            gh release create "${TAG}" release-assets/LingCang-* \
               --target "${GITHUB_SHA}" \
               --title "${TITLE}" \
               --notes "${NOTES}"
